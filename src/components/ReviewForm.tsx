@@ -3,6 +3,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -22,6 +23,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Label } from "./ui/label";
 
 interface Review {
   id: string;
@@ -49,9 +51,15 @@ const formSchema = z.object({
 const STORAGE_KEY = "shop_reviews";
 
 const ReviewForm = () => {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchReviews, setSearchReviews] = useState("");
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const [editData, setEditData] = useState({
+    shopName: "",
+    reviewText: "",
+    rating: 0,
+  });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -115,6 +123,53 @@ const ReviewForm = () => {
     setReviews((prev) => [newReview, ...prev]);
     form.reset({ shopName: "", reviewText: "", rating: 0 });
   }
+  const handleEditClick = (review: Review) => {
+    setEditingReviewId(review.id);
+    setEditData({
+      shopName: review.shopName,
+      reviewText: review.reviewText,
+      rating: review.rating,
+    });
+  };
+  // Cancel editing
+  const handleCancelEdit = () => {
+    setEditingReviewId(null);
+    setEditData({ shopName: "", reviewText: "", rating: 0 });
+  };
+
+  // Save edit
+  const handleSaveEdit = () => {
+    setReviews((prev) =>
+      prev.map((review) =>
+        review.id === editingReviewId
+          ? {
+              ...review,
+              ...editData,
+              date: new Date().toLocaleString("en-US", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+            }
+          : review
+      )
+    );
+    setEditingReviewId(null);
+  };
+
+  const handleDeleteReview = (id: string) => {
+    setReviews((prevReviews) =>
+      prevReviews.filter((review) => review.id !== id)
+    );
+  };
+
+  const filteredReviews = reviews.filter(
+    (review) =>
+      review.shopName.toLowerCase().includes(searchReviews.toLowerCase()) ||
+      review.reviewText.toLowerCase().includes(searchReviews.toLowerCase())
+  );
 
   if (isLoading) {
     return (
@@ -130,7 +185,7 @@ const ReviewForm = () => {
         Online Shop Review
       </p>
       <div className="w-full max-w-2xl space-y-8">
-        <Card className="w-full bg-[#f8f8ff]">
+        <Card className="w-full bg-[#f8f8ff] shadow-none">
           <CardHeader>
             <CardTitle className="text-xl">
               Submit Your Online Shop Review
@@ -139,7 +194,7 @@ const ReviewForm = () => {
               Share your experience with other shoppers.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="border-shad">
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
@@ -203,36 +258,126 @@ const ReviewForm = () => {
             </Form>
           </CardContent>
         </Card>
-
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">
             Submitted Reviews ({reviews.length})
           </h2>
           <Input
             placeholder="Search reviews by shop name or text..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={searchReviews}
+            onChange={(e) => setSearchReviews(e.target.value)}
             className="w-full"
           />
           <div className="grid gap-4">
-            {reviews.map((review) => (
-              <Card key={review.id} className="w-full">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{review.shopName}</CardTitle>
-                    <span className="text-[10px] font-semibold rounded-full text-green-700 border-[#67AE6E] border-[2px] bg-green-300 py-[2px] px-4">
-                      {review.date}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <StarRating initialRating={review.rating} readOnly />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-700">{review.reviewText}</p>
-                </CardContent>
-              </Card>
-            ))}
+            {filteredReviews.length > 0 ? (
+              filteredReviews.map((review) => {
+                const isEditing = editingReviewId === review.id;
+
+                return (
+                  <Card key={review.id} className="w-full">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between">
+                        {isEditing ? (
+                          <div className="w-1/2">
+                            <Label>Shop name</Label>
+                            <Input
+                              className="mt-2"
+                              value={editData.shopName}
+                              onChange={(e) =>
+                                setEditData((prev) => ({
+                                  ...prev,
+                                  shopName: e.target.value,
+                                }))
+                              }
+                            />
+                          </div>
+                        ) : (
+                          <CardTitle className="text-lg">
+                            {review.shopName}
+                          </CardTitle>
+                        )}
+                        <span className="text-[10px] font-semibold rounded-full text-green-700 border-[#67AE6E] border-[2px] bg-green-200 py-[2px] px-4">
+                          {review.date}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        {isEditing ? (
+                          <div className="mt-5">
+                            <Label className="mb-2 text-black">Rating</Label>
+                            <StarRating
+                              initialRating={editData.rating}
+                              onRatingChange={(rating) =>
+                                setEditData((prev) => ({ ...prev, rating }))
+                              }
+                            />
+                          </div>
+                        ) : (
+                          <StarRating initialRating={review.rating} readOnly />
+                        )}
+                      </div>
+                    </CardHeader>
+
+                    <CardContent>
+                      {isEditing ? (
+                        <div>
+                          <Label className="mb-2">Review text</Label>
+                          <Textarea
+                            value={editData.reviewText}
+                            onChange={(e) =>
+                              setEditData((prev) => ({
+                                ...prev,
+                                reviewText: e.target.value,
+                              }))
+                            }
+                            className="min-h-[100px]"
+                          />
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-700">
+                          {review.reviewText}
+                        </p>
+                      )}
+                    </CardContent>
+
+                    <CardFooter className="flex justify-end gap-2 pt-0">
+                      {isEditing ? (
+                        <>
+                          <CustomButton
+                            className="cursor-pointer py-4 px-4"
+                            text="Save"
+                            onClick={handleSaveEdit}
+                          />
+                          <CustomButton
+                            className="cursor-pointer py-4 px-4 bg-transparent text-gray-900 border-[1px] border-gray-400 hover:text-white"
+                            text="Cancel"
+                            onClick={handleCancelEdit}
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <CustomButton
+                            className="cursor-pointer py-4 px-4 bg-transparent text-gray-900 border-[1px] border-gray-400 hover:text-white"
+                            text="Edit"
+                            onClick={() => handleEditClick(review)}
+                          />
+                          <CustomButton
+                            className="cursor-pointer py-4 px-4 bg-[#D92C54]"
+                            text="Delete"
+                            onClick={() => handleDeleteReview(review.id)}
+                          />
+                        </>
+                      )}
+                    </CardFooter>
+                  </Card>
+                );
+              })
+            ) : (
+              <p className="text-center text-muted-foreground">
+                {searchReviews
+                  ? "No reviews match your search."
+                  : "No reviews found."}
+              </p>
+            )}
           </div>
         </div>
       </div>
