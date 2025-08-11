@@ -3,7 +3,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -23,7 +22,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Label } from "./ui/label";
+import ReviewCard from "./ReviewCard";
 
 interface Review {
   id: string;
@@ -269,106 +268,21 @@ const ReviewForm = () => {
             className="w-full"
           />
           <div className="grid gap-4">
-            {filteredReviews.length > 0 ? (
+            {filteredReviews?.length > 0 ? (
               filteredReviews.map((review) => {
                 const isEditing = editingReviewId === review.id;
 
                 return (
-                  <Card key={review.id} className="w-full">
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between">
-                        {isEditing ? (
-                          <div className="w-1/2">
-                            <Label>Shop name</Label>
-                            <Input
-                              className="mt-2"
-                              value={editData.shopName}
-                              onChange={(e) =>
-                                setEditData((prev) => ({
-                                  ...prev,
-                                  shopName: e.target.value,
-                                }))
-                              }
-                            />
-                          </div>
-                        ) : (
-                          <CardTitle className="text-lg">
-                            {review.shopName}
-                          </CardTitle>
-                        )}
-                        <span className="text-[10px] font-semibold rounded-full text-green-700 border-[#67AE6E] border-[2px] bg-green-200 py-[2px] px-4">
-                          {review.date}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        {isEditing ? (
-                          <div className="mt-5">
-                            <Label className="mb-2 text-black">Rating</Label>
-                            <StarRating
-                              initialRating={editData.rating}
-                              onRatingChange={(rating) =>
-                                setEditData((prev) => ({ ...prev, rating }))
-                              }
-                            />
-                          </div>
-                        ) : (
-                          <StarRating initialRating={review.rating} readOnly />
-                        )}
-                      </div>
-                    </CardHeader>
-
-                    <CardContent>
-                      {isEditing ? (
-                        <div>
-                          <Label className="mb-2">Review text</Label>
-                          <Textarea
-                            value={editData.reviewText}
-                            onChange={(e) =>
-                              setEditData((prev) => ({
-                                ...prev,
-                                reviewText: e.target.value,
-                              }))
-                            }
-                            className="min-h-[100px]"
-                          />
-                        </div>
-                      ) : (
-                        <p className="text-sm text-gray-700">
-                          {review.reviewText}
-                        </p>
-                      )}
-                    </CardContent>
-
-                    <CardFooter className="flex justify-end gap-2 pt-0">
-                      {isEditing ? (
-                        <>
-                          <CustomButton
-                            className="cursor-pointer py-4 px-4"
-                            text="Save"
-                            onClick={handleSaveEdit}
-                          />
-                          <CustomButton
-                            className="cursor-pointer py-4 px-4 bg-transparent text-gray-900 border-[1px] border-gray-400 hover:text-white"
-                            text="Cancel"
-                            onClick={handleCancelEdit}
-                          />
-                        </>
-                      ) : (
-                        <>
-                          <CustomButton
-                            className="cursor-pointer py-4 px-4 bg-transparent text-gray-900 border-[1px] border-gray-400 hover:text-white"
-                            text="Edit"
-                            onClick={() => handleEditClick(review)}
-                          />
-                          <CustomButton
-                            className="cursor-pointer py-4 px-4 bg-[#D92C54]"
-                            text="Delete"
-                            onClick={() => handleDeleteReview(review.id)}
-                          />
-                        </>
-                      )}
-                    </CardFooter>
-                  </Card>
+                  <ReviewCard
+                    review={review}
+                    isEditing={isEditing}
+                    editData={editData}
+                    setEditData={setEditData}
+                    handleSaveEdit={handleSaveEdit}
+                    handleCancelEdit={handleCancelEdit}
+                    handleEditClick={handleEditClick}
+                    handleDeleteReview={handleDeleteReview}
+                  />
                 );
               })
             ) : (
